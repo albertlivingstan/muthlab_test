@@ -6,14 +6,24 @@
 <title>MATLAB 120 — Gamified Exam Trainer</title>
 <style>
 :root{--bg:#070b16;--card:#10182a;--card2:#151f35;--text:#eef3ff;--muted:#9aa8c3;--accent:#6c63ff;--accent2:#00d4ff;--good:#20d18a;--bad:#ff5c7a;--border:#263453}
-*{box-sizing:border-box} body{margin:0;background:radial-gradient(circle at 20% 0%,#18234a 0,#070b16 42%);color:var(--text);font-family:Inter,system-ui,Arial,sans-serif;min-height:100vh}
+*{box-sizing:border-box} body{margin:0;background:linear-gradient(-45deg,#070b16,#18234a,#0b1221,#121b30);background-size:400% 400%;animation:gradientBG 15s ease infinite;color:var(--text);font-family:Inter,system-ui,Arial,sans-serif;min-height:100vh}
+@keyframes gradientBG{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
 .app{max-width:1100px;margin:auto;padding:24px}.top{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:18px}.brand h1{margin:0;font-size:28px}.brand p{margin:5px 0;color:var(--muted)}
 .pill{padding:9px 13px;border:1px solid var(--border);border-radius:999px;background:#0d1425;color:#cbd6ee;font-weight:700}
 .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px}.stat{background:rgba(16,24,42,.92);border:1px solid var(--border);border-radius:16px;padding:14px}.stat b{font-size:22px}.stat span{display:block;color:var(--muted);font-size:12px;margin-top:3px}
-.progress{height:9px;background:#1b2640;border-radius:20px;overflow:hidden;margin:14px 0 22px}.bar{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));width:0%;transition:.3s}
+.progress{height:9px;background:#1b2640;border-radius:20px;overflow:hidden;margin:14px 0 22px}.bar{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));width:0%;transition:.4s cubic-bezier(0.4,0,0.2,1);position:relative}
+.bar::after{content:'';position:absolute;top:0;left:0;right:0;bottom:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.4),transparent);animation:shimmer 2s infinite linear}
+@keyframes shimmer{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}
 .card{background:rgba(16,24,42,.96);border:1px solid var(--border);border-radius:22px;padding:26px;box-shadow:0 18px 60px rgba(0,0,0,.25)}
 .modebar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}.modebar button,.btn{border:1px solid var(--border);background:#121b30;color:#dce5f7;padding:10px 14px;border-radius:11px;cursor:pointer;font-weight:700}.modebar button.active,.btn.primary{background:linear-gradient(135deg,var(--accent),#4c9cff);border-color:transparent;color:white}
-.qtop{display:flex;justify-content:space-between;gap:12px;color:var(--muted);font-size:13px}.question{font-size:22px;line-height:1.45;margin:16px 0 20px}.options{display:grid;gap:11px}.option{width:100%;text-align:left;padding:15px 16px;border-radius:13px;border:1px solid var(--border);background:#0c1425;color:#eaf0ff;cursor:pointer;font-size:15px;transition:.15s}.option:hover{transform:translateY(-1px);border-color:#51658e}.option.correct{background:rgba(32,209,138,.13);border-color:var(--good)}.option.wrong{background:rgba(255,92,122,.13);border-color:var(--bad)}.letter{display:inline-flex;width:28px;height:28px;border-radius:8px;background:#202d49;align-items:center;justify-content:center;margin-right:10px;font-weight:800}
+.qtop{display:flex;justify-content:space-between;gap:12px;color:var(--muted);font-size:13px}.question{font-size:22px;line-height:1.45;margin:16px 0 20px}.options{display:grid;gap:11px}
+@keyframes slideUpFade{from{opacity:0;transform:translateY(15px)}to{opacity:1;transform:translateY(0)}}
+.option{width:100%;text-align:left;padding:15px 16px;border-radius:13px;border:1px solid var(--border);background:#0c1425;color:#eaf0ff;cursor:pointer;font-size:15px;transition:all .2s;opacity:0;animation:slideUpFade 0.4s forwards}
+.option:hover{transform:translateY(-2px) scale(1.01);border-color:#51658e;box-shadow:0 5px 15px rgba(0,0,0,0.2)}
+.option.correct{background:rgba(32,209,138,.13);border-color:var(--good);box-shadow:0 0 15px rgba(32,209,138,0.3);z-index:10;position:relative}
+.option.wrong{background:rgba(255,92,122,.13);border-color:var(--bad)}
+.letter{display:inline-flex;width:28px;height:28px;border-radius:8px;background:#202d49;align-items:center;justify-content:center;margin-right:10px;font-weight:800;transition:.2s}
+.option:hover .letter{background:var(--accent);color:white;transform:rotate(-5deg)}
 .explain{margin-top:16px;padding:14px;border-radius:12px;background:#0b1221;border:1px solid var(--border);color:#c8d4ea;display:none}.explain.show{display:block}.actions{display:flex;justify-content:space-between;gap:10px;margin-top:20px}
 .hidden{display:none}.home{display:grid;grid-template-columns:1.2fr .8fr;gap:18px}.hero{padding:28px}.hero h2{font-size:36px;margin:0 0 10px}.hero p{color:var(--muted);line-height:1.6}.features{display:grid;gap:10px}.feature{padding:15px;background:#0d1527;border:1px solid var(--border);border-radius:13px}.feature b{display:block;margin-bottom:4px}.feature span{color:var(--muted);font-size:13px}
 .result{text-align:center}.score{font-size:64px;font-weight:900;background:linear-gradient(90deg,#fff,var(--accent2));-webkit-background-clip:text;color:transparent}.badge{display:inline-block;padding:8px 13px;border-radius:999px;background:#17233c;border:1px solid var(--border);margin:6px}.review{margin-top:20px;text-align:left}.reviewItem{padding:12px;border-bottom:1px solid var(--border)}.reviewItem b{color:var(--bad)}
@@ -119,6 +129,17 @@ let weak = JSON.parse(localStorage.getItem('matlabWeak')||'[]');
 let best = Number(localStorage.getItem('matlabBest')||0);
 document.getElementById('best').textContent=best+'%';
 
+function animateValue(id, start, end, duration) {
+ const obj = document.getElementById(id);
+ let startTimestamp = null;
+ const step = (timestamp) => {
+  if (!startTimestamp) startTimestamp = timestamp;
+  const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+  obj.innerHTML = Math.floor(progress * (end - start) + start);
+  if (progress < 1) window.requestAnimationFrame(step);
+ };
+ window.requestAnimationFrame(step);
+}
 function topicFor(i){if(i<20)return '🧩 Basics';if(i<40)return '🔁 Loops';if(i<78)return '📐 Matrices & Workspace';if(i<90)return '⚙️ Functions & Control';return '∫ Symbolic & Derivatives'}
 function startQuiz(m){
  mode=m;
@@ -130,6 +151,7 @@ function startQuiz(m){
  if(m==='all') quiz=shuffle(quiz);
  if(m==='weak') quiz=shuffle(quiz);
  index=0;score=0;correct=0;streak=0;maxStreak=0;wrong=[];seconds=1800;answered=false;
+ document.getElementById('score').textContent=score;
  document.getElementById('home').classList.add('hidden');document.getElementById('result').classList.add('hidden');document.getElementById('quiz').classList.remove('hidden');
  clearInterval(interval); if(timerOn) interval=setInterval(tick,1000); render();
 }
@@ -144,7 +166,7 @@ function render(){
  document.getElementById('question').textContent=q.q;
  const box=document.getElementById('options');box.innerHTML='';
  q.options.forEach((o,j)=>{
-   const b=document.createElement('button');b.className='option';b.innerHTML=`<span class="letter">${String.fromCharCode(65+j)}</span>${escapeHtml(o)}`;
+   const b=document.createElement('button');b.className='option';b.style.animationDelay=`${j*0.08}s`;b.innerHTML=`<span class="letter">${String.fromCharCode(65+j)}</span>${escapeHtml(o)}`;
    b.onclick=()=>answer(j,b);box.appendChild(b);
  });
  document.getElementById('explain').classList.remove('show');document.getElementById('explain').textContent='';
@@ -156,7 +178,7 @@ function answer(choice,btn){
  if(answered)return;answered=true;
  const q=questions[quiz[index]], opts=[...document.querySelectorAll('.option')];
  opts.forEach((b,i)=>{if(i===q.answer)b.classList.add('correct');});
- if(choice===q.answer){score+=100;correct++;streak++;maxStreak=Math.max(maxStreak,streak);btn.classList.add('correct');btn.classList.add('pulse');toast('✅ Correct! +100');}
+ if(choice===q.answer){animateValue('score', score, score+100, 500); score+=100;correct++;streak++;maxStreak=Math.max(maxStreak,streak);btn.classList.add('correct');btn.classList.add('pulse');toast('✅ Correct! +100');}
  else{streak=0;btn.classList.add('wrong');btn.classList.add('shake');wrong.push({i:quiz[index],choice}); if(!weak.includes(quiz[index]))weak.push(quiz[index]); localStorage.setItem('matlabWeak',JSON.stringify(weak));toast('❌ Not quite — memorize this one.');}
  document.getElementById('explain').innerHTML=`<b>Correct answer:</b> ${String.fromCharCode(65+q.answer)}) ${escapeHtml(q.options[q.answer])}`;
  document.getElementById('explain').classList.add('show');document.getElementById('next').disabled=false;updateStats();
@@ -196,7 +218,7 @@ function saveScore(){
 }
 function toggleTimer(){timerOn=!timerOn;clearInterval(interval);if(timerOn)interval=setInterval(tick,1000);toast(timerOn?'⏱ Timer ON':'⏸ Timer OFF')}
 function tick(){seconds--;if(seconds<=0){seconds=0;updateStats();finish();return}updateStats()}
-function updateStats(){document.getElementById('score').textContent=score;document.getElementById('correct').textContent=correct;document.getElementById('streak').textContent=streak;const m=String(Math.floor(seconds/60)).padStart(2,'0'),s=String(seconds%60).padStart(2,'0');const t=document.getElementById('timer');t.textContent=m+':'+s;t.classList.toggle('danger',seconds<120);document.getElementById('bar').style.width=((index)/Math.max(1,quiz.length)*100)+'%'}
+function updateStats(){document.getElementById('correct').textContent=correct;document.getElementById('streak').textContent=streak;const m=String(Math.floor(seconds/60)).padStart(2,'0'),s=String(seconds%60).padStart(2,'0');const t=document.getElementById('timer');t.textContent=m+':'+s;t.classList.toggle('danger',seconds<120);document.getElementById('bar').style.width=((index)/Math.max(1,quiz.length)*100)+'%'}
 function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.style.display='block';clearTimeout(window.tt);window.tt=setTimeout(()=>t.style.display='none',1000)}
 </script>
 </body>
