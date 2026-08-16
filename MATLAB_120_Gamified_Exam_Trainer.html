@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MATLAB 120 — Gamified Exam Trainer</title>
+<style>
+:root{--bg:#070b16;--card:#10182a;--card2:#151f35;--text:#eef3ff;--muted:#9aa8c3;--accent:#6c63ff;--accent2:#00d4ff;--good:#20d18a;--bad:#ff5c7a;--border:#263453}
+*{box-sizing:border-box} body{margin:0;background:radial-gradient(circle at 20% 0%,#18234a 0,#070b16 42%);color:var(--text);font-family:Inter,system-ui,Arial,sans-serif;min-height:100vh}
+.app{max-width:1100px;margin:auto;padding:24px}.top{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:18px}.brand h1{margin:0;font-size:28px}.brand p{margin:5px 0;color:var(--muted)}
+.pill{padding:9px 13px;border:1px solid var(--border);border-radius:999px;background:#0d1425;color:#cbd6ee;font-weight:700}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px}.stat{background:rgba(16,24,42,.92);border:1px solid var(--border);border-radius:16px;padding:14px}.stat b{font-size:22px}.stat span{display:block;color:var(--muted);font-size:12px;margin-top:3px}
+.progress{height:9px;background:#1b2640;border-radius:20px;overflow:hidden;margin:14px 0 22px}.bar{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));width:0%;transition:.3s}
+.card{background:rgba(16,24,42,.96);border:1px solid var(--border);border-radius:22px;padding:26px;box-shadow:0 18px 60px rgba(0,0,0,.25)}
+.modebar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}.modebar button,.btn{border:1px solid var(--border);background:#121b30;color:#dce5f7;padding:10px 14px;border-radius:11px;cursor:pointer;font-weight:700}.modebar button.active,.btn.primary{background:linear-gradient(135deg,var(--accent),#4c9cff);border-color:transparent;color:white}
+.qtop{display:flex;justify-content:space-between;gap:12px;color:var(--muted);font-size:13px}.question{font-size:22px;line-height:1.45;margin:16px 0 20px}.options{display:grid;gap:11px}.option{width:100%;text-align:left;padding:15px 16px;border-radius:13px;border:1px solid var(--border);background:#0c1425;color:#eaf0ff;cursor:pointer;font-size:15px;transition:.15s}.option:hover{transform:translateY(-1px);border-color:#51658e}.option.correct{background:rgba(32,209,138,.13);border-color:var(--good)}.option.wrong{background:rgba(255,92,122,.13);border-color:var(--bad)}.letter{display:inline-flex;width:28px;height:28px;border-radius:8px;background:#202d49;align-items:center;justify-content:center;margin-right:10px;font-weight:800}
+.explain{margin-top:16px;padding:14px;border-radius:12px;background:#0b1221;border:1px solid var(--border);color:#c8d4ea;display:none}.explain.show{display:block}.actions{display:flex;justify-content:space-between;gap:10px;margin-top:20px}
+.hidden{display:none}.home{display:grid;grid-template-columns:1.2fr .8fr;gap:18px}.hero{padding:28px}.hero h2{font-size:36px;margin:0 0 10px}.hero p{color:var(--muted);line-height:1.6}.features{display:grid;gap:10px}.feature{padding:15px;background:#0d1527;border:1px solid var(--border);border-radius:13px}.feature b{display:block;margin-bottom:4px}.feature span{color:var(--muted);font-size:13px}
+.result{text-align:center}.score{font-size:64px;font-weight:900;background:linear-gradient(90deg,#fff,var(--accent2));-webkit-background-clip:text;color:transparent}.badge{display:inline-block;padding:8px 13px;border-radius:999px;background:#17233c;border:1px solid var(--border);margin:6px}.review{margin-top:20px;text-align:left}.reviewItem{padding:12px;border-bottom:1px solid var(--border)}.reviewItem b{color:var(--bad)}
+.timer{font-variant-numeric:tabular-nums;color:#fff}.danger{color:var(--bad)}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);padding:11px 16px;border-radius:12px;background:#18233c;border:1px solid var(--border);display:none}
+@media(max-width:800px){.stats{grid-template-columns:repeat(2,1fr)}.home{grid-template-columns:1fr}.hero h2{font-size:28px}.question{font-size:19px}}
+</style>
+</head>
+<body>
+<div class="app">
+<header class="top">
+<div class="brand"><h1>⚡ MATLAB 120</h1><p>Gamified revision • MCQ mastery • 30-minute exam mode</p></div>
+<div class="pill">🏆 Best: <span id="best">0%</span></div>
+</header>
+
+<div id="home" class="card home">
+<section class="hero">
+<h2>Master all 120 questions.</h2>
+<p>Train fast with instant feedback, streaks, progress tracking and a 30-minute challenge. The question set is based on the questions you provided.</p>
+<div class="modebar">
+<button class="btn primary" onclick="startQuiz('all')">🎮 Start All 120</button>
+<button class="btn" onclick="startQuiz('weak')">🔥 Review Weak</button>
+<button class="btn" onclick="startQuiz('flash')">🧠 Flashcards</button>
+</div>
+<p><b>Suggested 30-minute plan:</b> 0–10 min Basics & Loops → 10–20 min Matrices/Workspace → 20–30 min Functions & Symbolic Differentiation.</p>
+</section>
+<section class="features">
+<div class="feature"><b>⏱ 30-Min Exam</b><span>Timer, score and final result.</span></div>
+<div class="feature"><b>🔥 Streak System</b><span>Build consecutive correct answers.</span></div>
+<div class="feature"><b>🎯 Instant Feedback</b><span>Correct answer is revealed immediately.</span></div>
+<div class="feature"><b>📌 Weak Questions</b><span>Wrong answers are saved in this browser.</span></div>
+<div class="feature"><b>🧠 Flashcard Mode</b><span>Reveal the answer before moving on.</span></div>
+</section>
+</div>
+
+<div id="quiz" class="hidden">
+<div class="stats">
+<div class="stat"><b id="score">0</b><span>Score</span></div>
+<div class="stat"><b id="streak">0</b><span>🔥 Streak</span></div>
+<div class="stat"><b id="correct">0</b><span>Correct</span></div>
+<div class="stat"><b id="timer" class="timer">30:00</b><span>Time</span></div>
+</div>
+<div class="progress"><div class="bar" id="bar"></div></div>
+<div class="modebar">
+<button onclick="goHome()">🏠 Home</button>
+<button onclick="restart()">↻ Restart</button>
+<button onclick="toggleTimer()">⏱ Timer On/Off</button>
+</div>
+<div class="card">
+<div class="qtop"><span id="qnum"></span><span id="topic"></span></div>
+<div class="question" id="question"></div>
+<div class="options" id="options"></div>
+<div class="explain" id="explain"></div>
+<div class="actions"><button class="btn" onclick="skip()">Skip</button><button class="btn primary" id="next" onclick="nextQ()" disabled>Next →</button></div>
+</div>
+</div>
+
+<div id="result" class="card hidden result">
+<h2>🎉 Session Complete!</h2>
+<div class="score" id="finalScore">0%</div>
+<div id="finalStats"></div>
+<div class="review" id="review"></div>
+<div class="modebar" style="justify-content:center;margin-top:20px">
+<button class="btn primary" onclick="startQuiz('all')">Play Again</button>
+<button class="btn" onclick="startQuiz('weak')">Review Weak</button>
+<button class="btn" onclick="goHome()">Home</button>
+</div>
+</div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const questions = [{"q": "MATLAB stands for:", "options": ["Matrix Laboratory", "Math Language", "Machine Language", "Matrix Language"], "answer": 0}, {"q": "MATLAB is most commonly used for:", "options": ["Web design", "Numerical computation and visualization", "Game development", "Text editing"], "answer": 1}, {"q": "In MATLAB, the “LAB” in MATLAB stands for:", "options": ["Labelling", "Laboratory", "Laboratory", "Lab-tech"], "answer": 1}, {"q": "Which of these is a valid MATLAB variable name?", "options": ["result_2025", "2025result", "result-2025", "result.2025"], "answer": 0}, {"q": "MATLAB variable names:", "options": ["Can begin with a space", "Must start with a letter", "Can include % symbol", "Only lowercase letters allowed"], "answer": 1}, {"q": "Identify the valid MATLAB variable name from the following:", "options": ["matrix_1", "matrix-1", "matrix.1", "1matrix"], "answer": 0}, {"q": "The default data type in MATLAB is:", "options": ["double", "int", "float", "char"], "answer": 0}, {"q": "By default, MATLAB stores numeric values as:", "options": ["double precision", "int32", "float", "logical"], "answer": 0}, {"q": "Which MATLAB command shows a variable’s data type?", "options": ["typeof()", "class()", "datatype()", "isType()"], "answer": 1}, {"q": "length([9 8 7 6 5 4]) returns:", "options": ["4", "6", "5", "Error"], "answer": 1}, {"q": "The output of length([5 10 15 20]) is:", "options": ["4", "3", "5", "Error"], "answer": 0}, {"q": "The command length('World') in MATLAB returns:", "options": ["4", "5", "6", "Error"], "answer": 1}, {"q": "The MATLAB expression M = [2 4; 6 8] creates:", "options": ["2×2 matrix", "4×1 vector", "Row vector", "Error"], "answer": 0}, {"q": "x = [1 2 3; 4 5 6] will create a:", "options": ["2×3 matrix", "3×2 matrix", "1×6 vector", "Error"], "answer": 0}, {"q": "The MATLAB expression [10 20 30] creates:", "options": ["1×3 row vector", "3×1 column vector", "Matrix", "Error"], "answer": 0}, {"q": "5:5:25 produces:", "options": ["[5 10 15 20]", "[5 10 15 20 25]", "[10 15 20 25]", "Error"], "answer": 1}, {"q": "8:-3:2 produces:", "options": ["[8 5 2]", "[2 5 8]", "[8 5]", "Error"], "answer": 0}, {"q": "The colon operator 1:2:10 produces:", "options": ["1 to 10 with step 2", "2 to 10 with step 1", "1 to 10 with step 1", "1 to 10"], "answer": 0}, {"q": "The command to display text or variables in MATLAB is:", "options": ["disp", "display", "show", "echo"], "answer": 0}, {"q": "To show the value of a variable x, you can use:", "options": ["disp(x)", "output(x)", "show(x)", "print(x)"], "answer": 0}, {"q": "Which command displays text in MATLAB?", "options": ["disp", "show", "printf", "echo"], "answer": 0}, {"q": "The break statement in loops:", "options": ["Exits the loop", "Restarts loop", "Pauses execution", "Ends current iteration"], "answer": 0}, {"q": "In MATLAB, break is used to:", "options": ["Exit a loop", "Skip iteration", "Stop MATLAB", "Pause loop"], "answer": 0}, {"q": "To skip the rest of a loop iteration and proceed to the next, use:", "options": ["break", "continue", "skip", "pass"], "answer": 1}, {"q": "A water tank is being filled slowly. You want to keep adding 5 liters until the tank reaches 50 liters. The MATLAB command used to execute this task is _____ and _____.", "options": ["while loop and disp command", "switch loop and exe command", "for loop and disp command", "if condition and exe command"], "answer": 0}, {"q": "Which loop continues until a condition is false?", "options": ["for", "while", "switch", "repeat"], "answer": 1}, {"q": "The command while count < 10 will:", "options": ["Keep executing until count >= 10", "Run 10 times", "Run indefinitely", "Error"], "answer": 0}, {"q": "To display cubes of numbers from 1 to 4:", "options": ["for i=1:4; disp(i^3); end", "while i<4 disp(i^3)", "for i=1:4; disp(i*i); end", "Error"], "answer": 0}, {"q": "Printing squares of even numbers up to 10 can be done by:", "options": ["for i=2:2:10; disp(i^2); end", "i=2:2:10; disp(i^2)", "while i<=10 disp(i^2)", "Error"], "answer": 0}, {"q": "In order to display the squares of the numbers from 1 to 5 in MATLAB, the valid code is:", "options": ["for i = 1:5; disp(i^2); end", "for i = 1:5 disp(i*i+1)", "while i <= 5 disp(i^2)", "if i == 5 disp(i*i)"], "answer": 0}, {"q": "Repeating a task for fixed number of times uses:", "options": ["for loop", "while loop", "switch", "conditional"], "answer": 0}, {"q": "A process with unknown iteration count is coded with:", "options": ["for", "while", "switch", "goto"], "answer": 1}, {"q": "If money triples each year, amount=1000; for y=1:2, amount=amount*3; end; results in:", "options": ["2000", "6000", "9000", "3000"], "answer": 1}, {"q": "A factory checks every 100 items produced for defects. The MATLAB loop that best automates this repeated inspection process is:", "options": ["for loop", "while loop", "switch loop", "try-case loop"], "answer": 0}, {"q": "If amount doubles every month for 4 months, starting ₹500:", "options": ["2000", "8000", "16000", "2500"], "answer": 1}, {"q": "An investment doubles every year. Calculate the amount after 3 years starting from ₹1000 using the given MATLAB code.", "options": ["8000", "4000", "3000", "6000"], "answer": 0}, {"q": "This code snippet prints: for k=2:2:8, disp(k); end → Output:", "options": ["1 2 3 4", "2 4 6 8", "4 6 8 10", "2 4 6"], "answer": 1}, {"q": "For odd days 1:5 print day number:", "options": ["for d=1:5; if mod(d,2)==1, disp(d); end; end", "if odd(d) ...", "Error", "while(d<5)"], "answer": 0}, {"q": "A light turns on every even-numbered day for 6 days. The output is:", "options": ["2 4 6", "1 2 3 4 5 6", "0 2 4 6", "1 3 5"], "answer": 0}, {"q": "MATLAB function file extension is:", "options": [".m", ".mat", ".exe", ".matlab"], "answer": 0}, {"q": "Data files saved with variables use extension:", "options": [".m", ".mat", ".data", ".dat"], "answer": 1}, {"q": "MATLAB script file extension is:", "options": [".m", ".mat", ".mlx", ".exe"], "answer": 0}, {"q": "MATLAB command used to return the number of rows and columns of a matrix A is:", "options": ["size(A)", "length(A)", "dim(A)", "rows(A), cols(A)"], "answer": 0}, {"q": "size([1 2; 3 4]) outputs:", "options": ["2 4", "2 2", "4 2", "Error"], "answer": 1}, {"q": "Command to get number of matrix elements:", "options": ["size()", "length()", "numel()", "dim()"], "answer": 2}, {"q": "The symbol used for matrix transpose in MATLAB is:", "options": ["^", "~", "'", "#"], "answer": 2}, {"q": "The transpose of a matrix A is written as:", "options": ["A'", "A^", "A~", "A`"], "answer": 0}, {"q": "Non-conjugate transpose in MATLAB is:", "options": ["A.'", "A'", "A`", "Error"], "answer": 0}, {"q": "To produce 6 equally spaced numbers from 0 to 10:", "options": ["linspace(0,10,6)", "0:6:10", "linspace(0,6,10)", "Error"], "answer": 0}, {"q": "The command linspace(0,1,5) gives:", "options": ["5 equally spaced values between 0 and 1", "5 zeros", "5 ones", "Error"], "answer": 0}, {"q": "linspace(1,2,3) gives:", "options": ["[1 1.5 2]", "[1 2]", "[1 1.25 1.5 1.75 2]", "Error"], "answer": 0}, {"q": "For A=rand(3,5) → size(A) returns:", "options": ["5×3", "15", "3×5", "Error"], "answer": 2}, {"q": "The output of size(A) for A = [1 2 3; 4 5 6; 7 8 9; 10 11 12] is:", "options": ["The 4×3 matrix itself", "The 3×4 matrix itself", "3 4", "4 3"], "answer": 3}, {"q": "A 4×4 identity matrix I has:", "options": ["4 4", "size(I) = 4×4", "16", "Error"], "answer": 1}, {"q": "To convert a 2×6 matrix into a 3×4 matrix, the command is:", "options": ["reshape(A,3,4)", "format(A,3,4)", "resize(A,3,4)", "matrix(A,3,4)"], "answer": 0}, {"q": "The MATLAB command used to reshape a 3×4 matrix into a 4×3 matrix is:", "options": ["reshape(A, 4, 3)", "change(A, 4, 3)", "format(A, 4, 3)", "resize(A, 4, 3)"], "answer": 0}, {"q": "Which MATLAB command will make a column vector from a 4×3 matrix?", "options": ["reshape(A,12,1)", "resize(A,1,12)", "change(A,1,12)", "vectorize(A)"], "answer": 0}, {"q": "The output of det([1 2; 3 4]) is:", "options": ["-2", "10", "0", "1"], "answer": 0}, {"q": "The determinant of [2 3; 4 5] is:", "options": ["-2", "-2", "2", "1"], "answer": 0}, {"q": "The value of det([4 7; 2 6]) is:", "options": ["10", "12", "10", "14"], "answer": 0}, {"q": "In MATLAB, the * operator is used for:", "options": ["Matrix multiplication", "Element-wise multiplication", "Dot product only", "Cross product"], "answer": 0}, {"q": "In artificial intelligence, neural networks involve matrix multiplications between weight and input matrices. The MATLAB command supporting this computation is:", "options": ["*", ".*", "dot()", "cross()"], "answer": 0}, {"q": "Element-wise multiplication of two matrices in MATLAB uses:", "options": ["*", ".*", "./", ".+"], "answer": 1}, {"q": "A student wants to store the marks of 5 subjects. The MATLAB code used to perform this task is:", "options": ["marks = [85 90 78 88 92];", "marks = {85, 90, 78, 88, 92};", "marks = (85 90 78 88 92);", "marks = “85,90,78,88,92”;"], "answer": 0}, {"q": "To store temperatures in an array:", "options": ["temps = [22 25 28]", "temps = {22, 25, 28}", "temps = (22 25 28)", "temps = “22,25,28”"], "answer": 0}, {"q": "The correct way to store marks for 4 subjects is:", "options": ["marks = [75 80 90 85]", "marks = \"75 80 90 85\"", "marks = {75,80,90,85}", "marks = (75,80,90,85)"], "answer": 0}, {"q": "length([3 6 9 12 15]) returns:", "options": ["4", "5", "6", "Error"], "answer": 1}, {"q": "The length of name = 'MATLAB' is:", "options": ["5", "6", "7", "Error"], "answer": 1}, {"q": "A mobile app stores steps walked each day: steps = [5000 6000 5500 6200];. length(steps) will return:", "options": ["4", "5000", "6000", "16200"], "answer": 0}, {"q": "For vals = [1 4 7 10]; vals(end) returns:", "options": ["1", "4", "7", "10"], "answer": 3}, {"q": "A = [10 20 30 40]; A(2) returns:", "options": ["30", "20", "10", "40"], "answer": 1}, {"q": "A gardener records plant heights over 4 weeks: height = [5 7 9 11];. height(3) will return:", "options": ["9", "5", "11", "7"], "answer": 0}, {"q": "MATLAB command to list variables in memory with details:", "options": ["whos", "whoami", "listvars", "viewvars"], "answer": 0}, {"q": "To simply list variable names in MATLAB:", "options": ["who", "whos", "listvars", "displayvars"], "answer": 0}, {"q": "The MATLAB command whos will:", "options": ["Displays information about current variables", "Clears all variables", "Creates a new variable", "Displays the value of variables"], "answer": 0}, {"q": "Command to remove specific variable x:", "options": ["clear x", "delete x", "remove x", "reset x"], "answer": 0}, {"q": "Command to remove all figures from memory:", "options": ["clear all", "reset", "close all", "delete all"], "answer": 2}, {"q": "Function to calculate sum of 2 numbers — header:", "options": ["function s = sum2(a,b)", "function = s(a,b)", "function s(a+b)", "sum2(a,b)"], "answer": 0}, {"q": "Function to return both sum and difference of 2 numbers:", "options": ["function [s,d] = sumdiff(a,b)", "function s,d = sumdiff(a,b)", "function sumdiff(a,b)", "function = sumdiff(a,b)"], "answer": 0}, {"q": "The command used to remove all defined variables in MATLAB workspace is:", "options": ["clear", "close", "delete all", "reset"], "answer": 0}, {"q": "If temp = 20, code if temp>25 ... will:", "options": ["Display “Hot”", "Display “Cool”", "Display “Warm”", "Error"], "answer": 1}, {"q": "For marks = 85; if marks >= 50 disp('Pass'); else disp('Fail'); end, output is:", "options": ["Pass", "Fail", "Error", "None"], "answer": 0}, {"q": "A teacher wants to create a function to calculate the average of 3 numbers. The correct function header is:", "options": ["function avg = average(a, b, c)", "function = avg(a, b, c)", "function [a, b, c] = avg", "avg(a, b, c)"], "answer": 0}, {"q": "Switch-case with choice='C' and only cases A,B:", "options": ["Case A", "Case B", "Otherwise case runs", "Error"], "answer": 2}, {"q": "For choice='A', switch shows:", "options": ["Tea", "Coffee", "Invalid", "Error"], "answer": 0}, {"q": "If x=12 in if x>10 y=x/2; else y=x+2; end → y = ?", "options": ["14", "6", "10", "2"], "answer": 1}, {"q": "A weather app uses if temp > 30 → 'Hot', else → 'Cool'. If temp = 32, output is:", "options": ["Hot", "Cool", "Warm", "Error"], "answer": 0}, {"q": "For x=8 in if x>=8 y=100; else y=0; end, y =", "options": ["100", "0", "8", "Error"], "answer": 0}, {"q": "A vending machine has choice='B'; case A → Tea; case B → Coffee; otherwise → Invalid. Output:", "options": ["Coffee", "Tea", "Invalid", "Error"], "answer": 0}, {"q": "diff([2 4 6 9]) returns:", "options": ["[2 2 3]", "[4 6 9]", "Error", "None"], "answer": 0}, {"q": "The output of x=5; if x>10 y=x*2; else y=x+2; end is:", "options": ["7", "10", "5", "12"], "answer": 0}, {"q": "The MATLAB command to calculate differences between adjacent elements of a numeric array f is:", "options": ["diff(f)", "derive(f)", "d(f)", "deriv(f)"], "answer": 0}, {"q": "The result of diff([10 7 3]) is:", "options": ["[-3 -4]", "[3 4]", "[-3 -1]", "Error"], "answer": 0}, {"q": "polyval([1 -3 2], 4) returns:", "options": ["6", "8", "4", "10"], "answer": 0}, {"q": "The MATLAB command polyder(p) computes:", "options": ["Derivative of polynomial", "Integral of polynomial", "Polynomial product", "Root of polynomial"], "answer": 0}, {"q": "The command polyint(p) computes:", "options": ["Derivative", "Integral", "Product", "Roots"], "answer": 1}, {"q": "To define symbolic variable x:", "options": ["syms x", "define x", "symbol x", "sym x"], "answer": 0}, {"q": "To declare symbols x,y,z:", "options": ["syms x y z", "symbol x y z", "define x,y,z", "sym x,y,z"], "answer": 0}, {"q": "sym('a') creates:", "options": ["Symbolic variable 'a'", "Numeric variable 'a'", "String 'a'", "Error"], "answer": 0}, {"q": "syms x; diff(exp(-x^2)) is:", "options": ["−2x·e^(−x²)", "2x·e^(−x²)", "e^(−x²)", "−x²·e^(−x²)"], "answer": 0}, {"q": "syms x; diff(x^3) →", "options": ["3x", "3*x^2", "x^2", "3x^3"], "answer": 1}, {"q": "For f = x^4 - 4*x^2 + 3; d2f = diff(f,x,2):", "options": ["12x² − 8", "4x³ − 8x", "12x − 4", "12x² − 4"], "answer": 0}, {"q": "diff(sin(x)) returns:", "options": ["cos(x)", "-cos(x)", "-sin(x)", "sin(x)"], "answer": 0}, {"q": "syms y; f=sin(y); diff(f) →", "options": ["-sin(y)", "cos(y)", "-cos(y)", "sin(y)"], "answer": 1}, {"q": "To find the 3rd derivative of f with respect to x:", "options": ["diff(f,x,3)", "d3(f,x)", "derive(f,3)", "diff3(f)"], "answer": 0}, {"q": "The MATLAB command used to find the second derivative of symbolic f with respect to x is:", "options": ["diff(f,x,2)", "d(f,2)", "second_diff(f)", "d(f,2)"], "answer": 0}, {"q": "To differentiate twice:", "options": ["diff(f,2)", "diff2(f)", "deriv(f,2)", "two_diff(f)"], "answer": 0}, {"q": "Derivative of 5*t^3 + 4*t is:", "options": ["15*t^2 + 4", "10*t^2 + 4", "15t + 4", "Error"], "answer": 0}, {"q": "diff(x^5, 2) returns:", "options": ["20*x^3", "5*x^4", "10*x^2", "x^3"], "answer": 0}, {"q": "Velocity for s(t)=t^2 is:", "options": ["diff(t^2)", "deriv(t^2)", "velocity(t^2)", "rate(t^2)"], "answer": 0}, {"q": "diff(x^4 - 2*x, 2) returns:", "options": ["12*x^2", "8*x", "4x", "x^2"], "answer": 0}, {"q": "diff(cos(x)) →", "options": ["-sin(x)", "sin(x)", "cos(x)", "-cos(x)"], "answer": 0}, {"q": "syms x; f = cos(x); diff(f) returns:", "options": ["-sin(x)", "sin(x)", "cos(x)", "-cos(x)"], "answer": 0}, {"q": "A car’s position is s(t)=3t²+2t+1. The MATLAB command to find velocity is:", "options": ["diff(3*t^2 + 2*t + 1)", "velocity(3*t^2 + 2*t + 1)", "deriv(3*t^2 + 2*t + 1)", "diff(s(t))"], "answer": 0}, {"q": "syms x; f = 1/x; diff(f) gives:", "options": ["-1/x^2", "ln(x)", "x^-1", "1/x^2"], "answer": 0}, {"q": "To get acceleration (2nd derivative) from position p(t):", "options": ["diff(p(t),t,2)", "diff(p(t),2)", "acceleration(p)", "polyder(p)"], "answer": 0}, {"q": "diff(log(x)) =", "options": ["1/x", "ln(x)", "log(x)", "x^-1"], "answer": 0}, {"q": "A rocket's height is h(t)=5t³−2t²+4t+10. The MATLAB command that correctly calculates acceleration is:", "options": ["diff(h(t), t, 2)", "polyval(h, t)", "diff(h(t), 2)", "acceleration(h(t))"], "answer": 0}, {"q": "diff(1/x^3) =", "options": ["-3/x^4", "-1/x^3", "-3/x^2", "3/x^4"], "answer": 0}, {"q": "2nd derivative of x^4 is:", "options": ["12*x^2", "4*x^3", "8x^2", "x^2"], "answer": 0}];
+let mode='all', quiz=[], index=0, score=0, correct=0, streak=0, maxStreak=0, answered=false, timerOn=true, seconds=1800, interval=null, wrong=[];
+let weak = JSON.parse(localStorage.getItem('matlabWeak')||'[]');
+let best = Number(localStorage.getItem('matlabBest')||0);
+document.getElementById('best').textContent=best+'%';
+
+function topicFor(i){if(i<20)return '🧩 Basics';if(i<40)return '🔁 Loops';if(i<78)return '📐 Matrices & Workspace';if(i<90)return '⚙️ Functions & Control';return '∫ Symbolic & Derivatives'}
+function startQuiz(m){
+ mode=m;
+ if(m==='weak'){
+   const set=weak.length?weak:questions.map((_,i)=>i);
+   quiz=set.map(i=>i).filter(i=>questions[i]);
+   if(!weak.length) toast('No weak questions yet — starting all 120.');
+ } else quiz=questions.map((_,i)=>i);
+ if(m==='all') quiz=shuffle(quiz);
+ if(m==='weak') quiz=shuffle(quiz);
+ index=0;score=0;correct=0;streak=0;maxStreak=0;wrong=[];seconds=1800;answered=false;
+ document.getElementById('home').classList.add('hidden');document.getElementById('result').classList.add('hidden');document.getElementById('quiz').classList.remove('hidden');
+ clearInterval(interval); if(timerOn) interval=setInterval(tick,1000); render();
+}
+function shuffle(a){return [...a].sort(()=>Math.random()-.5)}
+function render(){
+ const q=questions[quiz[index]];
+ answered=false; document.getElementById('next').disabled=true;
+ document.getElementById('qnum').textContent=`Question ${index+1} / ${quiz.length}`;
+ document.getElementById('topic').textContent=topicFor(quiz[index]);
+ document.getElementById('question').textContent=q.q;
+ const box=document.getElementById('options');box.innerHTML='';
+ q.options.forEach((o,j)=>{
+   const b=document.createElement('button');b.className='option';b.innerHTML=`<span class="letter">${String.fromCharCode(65+j)}</span>${escapeHtml(o)}`;
+   b.onclick=()=>answer(j,b);box.appendChild(b);
+ });
+ document.getElementById('explain').classList.remove('show');document.getElementById('explain').textContent='';
+ document.getElementById('bar').style.width=((index)/quiz.length*100)+'%';
+ updateStats();
+}
+function escapeHtml(s){return s.replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;')}
+function answer(choice,btn){
+ if(answered)return;answered=true;
+ const q=questions[quiz[index]], opts=[...document.querySelectorAll('.option')];
+ opts.forEach((b,i)=>{if(i===q.answer)b.classList.add('correct');});
+ if(choice===q.answer){score+=100;correct++;streak++;maxStreak=Math.max(maxStreak,streak);btn.classList.add('correct');toast('✅ Correct! +100');}
+ else{streak=0;btn.classList.add('wrong');wrong.push({i:quiz[index],choice}); if(!weak.includes(quiz[index]))weak.push(quiz[index]); localStorage.setItem('matlabWeak',JSON.stringify(weak));toast('❌ Not quite — memorize this one.');}
+ document.getElementById('explain').innerHTML=`<b>Correct answer:</b> ${String.fromCharCode(65+q.answer)}) ${escapeHtml(q.options[q.answer])}`;
+ document.getElementById('explain').classList.add('show');document.getElementById('next').disabled=false;updateStats();
+}
+function nextQ(){if(!answered)return;if(index<quiz.length-1){index++;render()}else finish()}
+function skip(){if(answered)return;wrong.push({i:quiz[index],choice:null});if(!weak.includes(quiz[index]))weak.push(quiz[index]);localStorage.setItem('matlabWeak',JSON.stringify(weak));if(index<quiz.length-1){index++;render()}else finish()}
+function finish(){
+ clearInterval(interval);document.getElementById('quiz').classList.add('hidden');document.getElementById('result').classList.remove('hidden');
+ const pct=Math.round(correct/quiz.length*100);if(pct>best){best=pct;localStorage.setItem('matlabBest',best);document.getElementById('best').textContent=best+'%'}
+ document.getElementById('finalScore').textContent=pct+'%';
+ document.getElementById('finalStats').innerHTML=`<span class="badge">✅ ${correct}/${quiz.length} correct</span><span class="badge">🔥 Best streak ${maxStreak}</span><span class="badge">❌ ${quiz.length-correct} to review</span>`;
+ const r=document.getElementById('review');r.innerHTML='';
+ if(wrong.length){r.innerHTML='<h3>📌 Review These</h3>';wrong.slice(0,30).forEach(w=>{const q=questions[w.i];const d=document.createElement('div');d.className='reviewItem';d.innerHTML=`<b>Q${w.i+1}</b> ${escapeHtml(q.q)}<br><small>Answer: ${String.fromCharCode(65+q.answer)}) ${escapeHtml(q.options[q.answer])}</small>`;r.appendChild(d)})}
+}
+function restart(){startQuiz(mode)}
+function goHome(){clearInterval(interval);document.getElementById('quiz').classList.add('hidden');document.getElementById('result').classList.add('hidden');document.getElementById('home').classList.remove('hidden')}
+function toggleTimer(){timerOn=!timerOn;clearInterval(interval);if(timerOn)interval=setInterval(tick,1000);toast(timerOn?'⏱ Timer ON':'⏸ Timer OFF')}
+function tick(){seconds--;if(seconds<=0){seconds=0;updateStats();finish();return}updateStats()}
+function updateStats(){document.getElementById('score').textContent=score;document.getElementById('correct').textContent=correct;document.getElementById('streak').textContent=streak;const m=String(Math.floor(seconds/60)).padStart(2,'0'),s=String(seconds%60).padStart(2,'0');const t=document.getElementById('timer');t.textContent=m+':'+s;t.classList.toggle('danger',seconds<120);document.getElementById('bar').style.width=((index)/Math.max(1,quiz.length)*100)+'%'}
+function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.style.display='block';clearTimeout(window.tt);window.tt=setTimeout(()=>t.style.display='none',1000)}
+</script>
+</body>
+</html>
