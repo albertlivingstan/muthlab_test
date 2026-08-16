@@ -20,7 +20,21 @@
 .timer{font-variant-numeric:tabular-nums;color:#fff}.danger{color:var(--bad)}
 .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);padding:11px 16px;border-radius:12px;background:#18233c;border:1px solid var(--border);display:none}
 @media(max-width:800px){.stats{grid-template-columns:repeat(2,1fr)}.home{grid-template-columns:1fr}.hero h2{font-size:28px}.question{font-size:19px}}
+@keyframes shake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-5px)}40%,80%{transform:translateX(5px)}}
+@keyframes pulse{0%{transform:scale(1)}50%{transform:scale(1.05)}100%{transform:scale(1)}}
+@keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.shake{animation:shake 0.4s ease-in-out}
+.pulse{animation:pulse 0.4s ease-in-out}
+.fade-in{animation:fadeIn 0.3s ease-out forwards}
+.input-name{background:#0c1425;border:1px solid var(--border);color:#fff;padding:12px;border-radius:11px;font-size:16px;width:100%;margin-top:12px;outline:none;}
+.input-name:focus{border-color:var(--accent)}
+.submit-score{margin-top:20px;padding:16px;background:#0d1527;border-radius:12px;border:1px solid var(--border)}
+.leaderboard-list{margin-top:16px;display:grid;gap:8px;text-align:left;}
+.leader-item{display:flex;justify-content:space-between;padding:12px 16px;background:#121b30;border-radius:10px;border:1px solid var(--border);font-size:15px;align-items:center}
+.leader-item b{color:var(--accent2);font-size:18px;}
+.rank-1 b{color:#ffd700;} .rank-2 b{color:#c0c0c0;} .rank-3 b{color:#cd7f32;}
 </style>
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 </head>
 <body>
 <div class="app">
@@ -37,6 +51,7 @@
 <button class="btn primary" onclick="startQuiz('all')">🎮 Start All 120</button>
 <button class="btn" onclick="startQuiz('weak')">🔥 Review Weak</button>
 <button class="btn" onclick="startQuiz('flash')">🧠 Flashcards</button>
+<button class="btn" onclick="showLeaderboard()">🏆 Leaderboard</button>
 </div>
 <p><b>Suggested 30-minute plan:</b> 0–10 min Basics & Loops → 10–20 min Matrices/Workspace → 20–30 min Functions & Symbolic Differentiation.</p>
 </section>
@@ -75,11 +90,23 @@
 <h2>🎉 Session Complete!</h2>
 <div class="score" id="finalScore">0%</div>
 <div id="finalStats"></div>
+<div class="submit-score" id="submitScoreDiv">
+  <h3>🏆 Save Your Rank</h3>
+  <input type="text" id="playerName" class="input-name" placeholder="Enter your name to join the leaderboard..." maxlength="20">
+  <button class="btn primary" style="margin-top:12px;width:100%" onclick="saveScore()">Submit Score</button>
+</div>
 <div class="review" id="review"></div>
 <div class="modebar" style="justify-content:center;margin-top:20px">
 <button class="btn primary" onclick="startQuiz('all')">Play Again</button>
 <button class="btn" onclick="startQuiz('weak')">Review Weak</button>
 <button class="btn" onclick="goHome()">Home</button>
+</div>
+</div>
+<div id="leaderboardScreen" class="card hidden result">
+<h2>🏆 Top Ranks</h2>
+<div class="leaderboard-list" id="leaderboardList"></div>
+<div class="modebar" style="justify-content:center;margin-top:20px">
+<button class="btn primary" onclick="goHome()">🏠 Back to Home</button>
 </div>
 </div>
 </div>
@@ -109,6 +136,8 @@ function startQuiz(m){
 function shuffle(a){return [...a].sort(()=>Math.random()-.5)}
 function render(){
  const q=questions[quiz[index]];
+ const qCard = document.getElementById('quiz').querySelector('.card');
+ qCard.classList.remove('fade-in'); void qCard.offsetWidth; qCard.classList.add('fade-in');
  answered=false; document.getElementById('next').disabled=true;
  document.getElementById('qnum').textContent=`Question ${index+1} / ${quiz.length}`;
  document.getElementById('topic').textContent=topicFor(quiz[index]);
@@ -127,8 +156,8 @@ function answer(choice,btn){
  if(answered)return;answered=true;
  const q=questions[quiz[index]], opts=[...document.querySelectorAll('.option')];
  opts.forEach((b,i)=>{if(i===q.answer)b.classList.add('correct');});
- if(choice===q.answer){score+=100;correct++;streak++;maxStreak=Math.max(maxStreak,streak);btn.classList.add('correct');toast('✅ Correct! +100');}
- else{streak=0;btn.classList.add('wrong');wrong.push({i:quiz[index],choice}); if(!weak.includes(quiz[index]))weak.push(quiz[index]); localStorage.setItem('matlabWeak',JSON.stringify(weak));toast('❌ Not quite — memorize this one.');}
+ if(choice===q.answer){score+=100;correct++;streak++;maxStreak=Math.max(maxStreak,streak);btn.classList.add('correct');btn.classList.add('pulse');toast('✅ Correct! +100');}
+ else{streak=0;btn.classList.add('wrong');btn.classList.add('shake');wrong.push({i:quiz[index],choice}); if(!weak.includes(quiz[index]))weak.push(quiz[index]); localStorage.setItem('matlabWeak',JSON.stringify(weak));toast('❌ Not quite — memorize this one.');}
  document.getElementById('explain').innerHTML=`<b>Correct answer:</b> ${String.fromCharCode(65+q.answer)}) ${escapeHtml(q.options[q.answer])}`;
  document.getElementById('explain').classList.add('show');document.getElementById('next').disabled=false;updateStats();
 }
@@ -136,6 +165,8 @@ function nextQ(){if(!answered)return;if(index<quiz.length-1){index++;render()}el
 function skip(){if(answered)return;wrong.push({i:quiz[index],choice:null});if(!weak.includes(quiz[index]))weak.push(quiz[index]);localStorage.setItem('matlabWeak',JSON.stringify(weak));if(index<quiz.length-1){index++;render()}else finish()}
 function finish(){
  clearInterval(interval);document.getElementById('quiz').classList.add('hidden');document.getElementById('result').classList.remove('hidden');
+ document.getElementById('submitScoreDiv').style.display='block'; document.getElementById('playerName').value='';
+ if(typeof confetti !== 'undefined') confetti({particleCount: 150, spread: 70, origin: {y: 0.6}});
  const pct=Math.round(correct/quiz.length*100);if(pct>best){best=pct;localStorage.setItem('matlabBest',best);document.getElementById('best').textContent=best+'%'}
  document.getElementById('finalScore').textContent=pct+'%';
  document.getElementById('finalStats').innerHTML=`<span class="badge">✅ ${correct}/${quiz.length} correct</span><span class="badge">🔥 Best streak ${maxStreak}</span><span class="badge">❌ ${quiz.length-correct} to review</span>`;
@@ -143,7 +174,26 @@ function finish(){
  if(wrong.length){r.innerHTML='<h3>📌 Review These</h3>';wrong.slice(0,30).forEach(w=>{const q=questions[w.i];const d=document.createElement('div');d.className='reviewItem';d.innerHTML=`<b>Q${w.i+1}</b> ${escapeHtml(q.q)}<br><small>Answer: ${String.fromCharCode(65+q.answer)}) ${escapeHtml(q.options[q.answer])}</small>`;r.appendChild(d)})}
 }
 function restart(){startQuiz(mode)}
-function goHome(){clearInterval(interval);document.getElementById('quiz').classList.add('hidden');document.getElementById('result').classList.add('hidden');document.getElementById('home').classList.remove('hidden')}
+function goHome(){clearInterval(interval);document.getElementById('quiz').classList.add('hidden');document.getElementById('result').classList.add('hidden');document.getElementById('leaderboardScreen').classList.add('hidden');document.getElementById('home').classList.remove('hidden')}
+function showLeaderboard(){
+ document.getElementById('home').classList.add('hidden');document.getElementById('result').classList.add('hidden');document.getElementById('quiz').classList.add('hidden');document.getElementById('leaderboardScreen').classList.remove('hidden');
+ const lb=JSON.parse(localStorage.getItem('matlabLeaderboard')||'[]');
+ const list=document.getElementById('leaderboardList');
+ if(!lb.length){list.innerHTML='<div style="text-align:center;color:var(--muted);padding:20px">No scores yet. Be the first!</div>';return;}
+ list.innerHTML=lb.map((entry,i)=>`<div class="leader-item rank-${i+1}"><span><b>#${i+1}</b> &nbsp; ${escapeHtml(entry.name)}</span><span><b>${entry.score}</b> <small>pts</small></span></div>`).join('');
+}
+function saveScore(){
+ const name=document.getElementById('playerName').value.trim();
+ if(!name){toast('⚠️ Enter a name first!');return;}
+ const lb=JSON.parse(localStorage.getItem('matlabLeaderboard')||'[]');
+ lb.push({name, score, time: 1800-seconds, date: new Date().toISOString()});
+ lb.sort((a,b)=>b.score - a.score || a.time - b.time);
+ const top10 = lb.slice(0, 10);
+ localStorage.setItem('matlabLeaderboard', JSON.stringify(top10));
+ document.getElementById('submitScoreDiv').style.display='none';
+ toast('🎉 Score Submitted!');
+ setTimeout(showLeaderboard, 800);
+}
 function toggleTimer(){timerOn=!timerOn;clearInterval(interval);if(timerOn)interval=setInterval(tick,1000);toast(timerOn?'⏱ Timer ON':'⏸ Timer OFF')}
 function tick(){seconds--;if(seconds<=0){seconds=0;updateStats();finish();return}updateStats()}
 function updateStats(){document.getElementById('score').textContent=score;document.getElementById('correct').textContent=correct;document.getElementById('streak').textContent=streak;const m=String(Math.floor(seconds/60)).padStart(2,'0'),s=String(seconds%60).padStart(2,'0');const t=document.getElementById('timer');t.textContent=m+':'+s;t.classList.toggle('danger',seconds<120);document.getElementById('bar').style.width=((index)/Math.max(1,quiz.length)*100)+'%'}
